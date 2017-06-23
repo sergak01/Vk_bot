@@ -18,6 +18,7 @@ def main():
 	# 	time.sleep(10)
 	# 	setattr(setting, "public_token", "token1")
 	# d_sttings = dynamic_settings()
+	print(str(dyn_sett_dict))
 
 def print_settings(obj_settings):
 	print(str(getattr(obj_settings, "answer_admins")))
