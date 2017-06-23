@@ -91,3 +91,5 @@ ENV/
 # Security data #
 #################
 settings.py
+settings1.py
+dynamic_settings.ini
