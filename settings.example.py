@@ -9,8 +9,8 @@ public_token = 'public/club token'
 #пользователям через чат.
 vk_app_id = -1
 #Словарь актуальных токенов пользователей. Проверка и удаление "мертвых" при каждом использовании.
-#Структура по типу JSON {users_token: [{user_id: 12345, user_token: "token", time_out: 12345(unixtime)}, {user_id: 54321, user_token: "token", time_out: 54321(unixtime)}]}
-users_token = {users_token: [{}]}
+#Структура по типу JSON {users_token: [12345: {user_token: "token", time_out: 12345(unixtime)}, 54321: {user_token: "token", time_out: 54321(unixtime)}]}
+users_token = {users_token: [1: {user_token: "token", time_out: 12345}]}
 #Папка плагинов
 path = 'plugins/'
 #Префиксы сообщений, на которые бот будет реагировать.
