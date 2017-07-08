@@ -2,11 +2,11 @@
 
 class Interface:
     vk = None
-    dinamic_settings = dict()
+    dynamic_settings = dict()
 
-    def __init__(self, vk, dinamic_settings):
+    def __init__(self, vk, dynamic_settings):
         self.vk = vk
-        self.dinamic_settings = dinamic_settings
+        self.dynamic_settings = dynamic_settings
 
     def get_keys(self):
         keys = [u'help', u'/help', u'помоги', u'помощь', u'допоможи', u'допомога', u'хелп', u'спасите', u'/помоги', u'/помощь', u'/допоможи', u'/допомога', u'/хелп', u'/спасите']
