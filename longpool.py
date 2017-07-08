@@ -17,6 +17,7 @@ def main():
 
         #login, password = '', ''
         #vk_session = vk_api.VkApi(login, password)
+        print("Запускаю новую сессию!")
         token = settings.vk_token
         vk_session = vk_api.VkApi(token = token)
         vk_user_session = vk_api.VkApi(token = settings.vk_user_token)
