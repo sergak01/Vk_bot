@@ -9,6 +9,7 @@ import ast
 import vk_api
 from vk_api.longpoll import VkLongPoll, VkEventType
 from DynamicSettings import DynamicSettings
+from BotException import BotException
 
 import settings
 
@@ -29,13 +30,12 @@ def main():
     rexp_commands = {} #Словарь регулярных команд
     interfaces = {} #Словарь интерфейсов
     vk = vk_api.VkApi(token = settings.vk_token)
-    settings.dyn_sett_file = DynamicSettings(dynamic_settings_filename = settings.dynamic_settings_file)
-    dyn_sett_file = settings.dyn_sett_file
-    if(dyn_sett_file.file_created()):
-        dyn_sett_dict = dyn_sett_file.get()
+    dynamic_settings = DynamicSettings(dynamic_settings_filename = settings.dynamic_settings_file)
+    if(dynamic_settings.file_created()):
+        dyn_sett_dict = dynamic_settings.get()
     else:
         dyn_sett_dict = generate_standart_dynamic_setting()
-        dyn_sett_file.set(dyn_sett_dict)
+        dynamic_settings.set(dyn_sett_dict)
 
     try:
         vk.auth()
@@ -43,7 +43,7 @@ def main():
         print(error_msg)
         return
 
-    print('Подгружаем плагины...')
+    print('Подгружаем интерфейсы...')
 
     print('---------------------------')
 
@@ -53,10 +53,8 @@ def main():
         fname, ext = os.path.splitext(f)
         if ext == '.py':
             mod = __import__(fname)
-            interfaces[fname] = mod.Interface(vk, dyn_sett_dict)
+            interfaces[fname] = mod.Interface(vk, dynamic_settings)
     sys.path.pop(0)
-
-    print('---------------------------')
 
     # Регистрируем ключевые слова интерфейсов
     for interface in interfaces.values():
@@ -68,11 +66,14 @@ def main():
         for key, value in interface.get_rexp().items():
             rexp_commands[key] = value
 
+    print('---------------------------')
+    print('Интерфейсы загружены')
+
     #print(commands)
     #print(rexp_commands)
-
+    print('Запускаем постоянное считывание ленты сообщений...')
     longpoll = VkLongPoll(vk)
-
+    print('Считывание ленты запущено.')
     for event in longpoll.listen():
 
         if event.type == VkEventType.MESSAGE_NEW:
@@ -85,10 +86,14 @@ def main():
 
             try:
                 print('Текст: ', event.text)
+            except UnicodeEncodeError as e:
+                print(e)
+            except KeyboardInterrupt:
+                print("Процесс бота завершен пользователем!")
+                raise
             except Exception as e:
                 print(e)
-                if e == KeyboardInterrupt:
-                    return
+                raise
             print()
         else:
             print(event.type, event.raw[1:])
@@ -102,7 +107,7 @@ def main():
     #     time.sleep(10)
     #     setattr(setting, "public_token", "token1")
     # d_sttings = dynamic_settings()
-    print(str(dyn_sett_dict))
+    # print(str(dyn_sett_dict))
 
 def command(event, commands, rexp_commands):
     if event.text == u'':

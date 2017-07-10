@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from BotException import BotException
 
 class Interface:
     vk = None

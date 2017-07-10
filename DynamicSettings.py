@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import re
 import os
+import time
+import ast
 
 class DynamicSettings:
     """Класс для управления динамическими настройками бота.
@@ -20,6 +22,9 @@ class DynamicSettings:
 
     def __init__(self, dynamic_settings_filename="dynamic_settings.ini"):
         self.dynamic_settings_filename = dynamic_settings_filename
+        self.parameters_dict = self.get().copy()
+        if self.parameters_dict != self.get(original = True):
+            self.set(self.parameters_dict)
 
     def set_filename(self, filename="dynamic_settings.ini"):
         """Изменение стандартного имени файла динамических настроек
@@ -34,7 +39,7 @@ class DynamicSettings:
         if filename != "":
             self.dynamic_settings_filename = filename
             return
-        raise NameError("Filename must be not empty!")
+        raise BotException("Filename must be not empty!")
 
     def file_created(self):
             try:
@@ -45,7 +50,16 @@ class DynamicSettings:
             except FileNotFoundError:
                 return False
 
-    def get(self):
+    def get(self, original=False):
+        """Возвращает словарь с настройками
+
+        Параметр original принимает значение True или False.
+
+        Когда равно True - возвращает оригинальные настройки, иначе
+        проверяет валидность токенов по времени жизни. Если время
+        жизни менше в unixtime чем сейчас - удаляет токен.
+
+        """
         try:
             if os.stat(self.dynamic_settings_filename).st_size != 0:
                 self.file = open(self.dynamic_settings_filename, "r")
@@ -60,17 +74,25 @@ class DynamicSettings:
                             parser.sub(r'\2', str(item))}
                             )
                 self.file.close()
+                if not original:
+                    self.autoremove(parameters_dict = parameters_dict_temp)
                 return parameters_dict_temp
             else:
+                if not original:
+                    self.autoremove()
                 return self.parameters_dict
         except FileNotFoundError:
             print("File not found!")
-            return
+            if not original:
+                self.autoremove()
+            return self.parameters_dict
 
     def set(self, settings={}):
         if isinstance(settings, dict):
+            # self.autoremove(parameters_dict = settings)
             if settings == {}:
                 settings = self.get()
+                # self.autoremove(parameters_dict = settings)
             try:
                 os.stat(self.dynamic_settings_filename).st_size
             except FileNotFoundError:
@@ -83,25 +105,30 @@ class DynamicSettings:
                     self.file.write('\n')
                 self.file.close()
             else:
-                if self.get() == settings:
+                if self.get(original = True) == settings:
                     return
                 else:
-                    self.get()
+                    self.get(original = True)
                     for name, value in settings.items():
                         self.parameters_dict.update({name: value})
-                    self.file = open(self.dynamic_settings_filename, "w")
+                    self.file = open(
+                        self.dynamic_settings_filename, 
+                        "w"
+                        )
                     parameters_dict_temp = self.parameters_dict.copy()
                     for item in self.file_data_list:
                         rexp_comment = r'^[#\s][^\n]+\n'
                         parser_c = re.compile(rexp_comment)
-                        if parser_c.sub("", str(item))=="" or str(item)=="\n":
+                        if parser_c.sub("", str(item))=="" or \
+                            str(item)=="\n":
                             self.file.write(item)
                         else:
                             rexp = r'([^\s]+)[^\S]*=[^\S]*([^\n]+)\n?'
                             parser = re.compile(rexp)
-                            for name, value in self.parameters_dict.items():
-                                if (name == parser.sub(r'\1', str(item))) and \
-                                (name != ''):
+                            for name, value in \
+                                self.parameters_dict.items():
+                                if (name==parser.sub(r'\1', str(item))) and \
+                                    (name != ''):
                                     self.file.write(str(name) +
                                         " = " +
                                         str(value))
@@ -114,5 +141,31 @@ class DynamicSettings:
                             self.file.write('\n')
                     self.file.close()
         else:
-            raise NameError("Settings not dict!")
+            raise BotException("Settings not dict!")
+
+    def autoremove(self, parameters_dict=parameters_dict):
+        users_token = ast.literal_eval(
+            parameters_dict.get("users_token")
+            ).copy()
+        users_token_temp = ast.literal_eval(
+            parameters_dict.get("users_token")
+            ).copy()
+        for key, value in users_token_temp.items():
+            if isinstance(
+                ast.literal_eval(ast.literal_eval(value).get("time_out")),
+                int
+                ) and (ast.literal_eval(
+                ast.literal_eval(value)["time_out"]) < \
+                int(time.time())
+                ):
+                users_token.pop(key, False)
+        parameters_dict.update({"users_token": str(users_token)})
+        # print(parameters_dict)
+
+    def update(self, item=dict):
+        if isinstance(item, dict) and item!={}:
+            self.parameters_dict.update(item)
+            self.set(settings = self.parameters_dict)
+            return
+        raise BotException("Item not dict!")
         
