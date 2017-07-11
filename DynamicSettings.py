@@ -42,13 +42,19 @@ class DynamicSettings:
         raise BotException("Filename must be not empty!")
 
     def file_created(self):
-            try:
-                if os.stat(self.dynamic_settings_filename).st_size != 0:
-                    return True
-                else:
-                    return False
-            except FileNotFoundError:
+        """Функция проферки существования файла динамических настроек.
+
+        Возвращает True если файл существуеи и он не пустой.
+        Иначе - возвращает False
+
+        """
+        try:
+            if os.stat(self.dynamic_settings_filename).st_size != 0:
+                return True
+            else:
                 return False
+        except FileNotFoundError:
+            return False
 
     def get(self, original=False):
         """Возвращает словарь с настройками
@@ -88,6 +94,30 @@ class DynamicSettings:
             return self.parameters_dict
 
     def set(self, settings={}):
+        """Сохраняет настройки в переменную и записывает в файл
+
+        Если функция выполнена без параметров или передан пустой
+        словарь - получает настройки выполнением функции get() без
+        параметров.
+
+        Также, если файл динамических настроек не существует - создает
+        его.
+
+        Когда файл существует и он пустой - пишет в файл содержимое
+        параметра settings без каких либо изменений.
+
+        Если файл не пустой - проверяет настройки на обработку
+        функцией autoremove() сравнением словарей settings и
+        возвращаемым значением функции get(original = True). Если они
+        будут равны - ничего не делает, так-как настройки одинаковые.
+        Если настройки отличаються - выполняет обновление переменной и
+        файла, не затронув комментарии.
+
+        Поддерживаються только однострочные комментарии, где началом
+        строки (обязательно первым символом) должен идти знак решетки
+        '#'. Если будут отличия - возможны баги и удаление этих строк.
+
+        """
         if isinstance(settings, dict):
             # self.autoremove(parameters_dict = settings)
             if settings == {}:
@@ -144,6 +174,15 @@ class DynamicSettings:
             raise BotException("Settings not dict!")
 
     def autoremove(self, parameters_dict=parameters_dict):
+        """Функция удаляет токены с вышедшим временем time_out
+
+        Функцию возможно запускать без параматров, тогда она проверит
+        'умершие' токены и удалит их в файле динамических настроек.
+
+        Если передать в параметре parameters_dict словарь, функция
+        его проверит на мертвые токены и обновит.
+
+        """
         users_token = ast.literal_eval(
             parameters_dict.get("users_token")
             ).copy()
@@ -163,6 +202,15 @@ class DynamicSettings:
         # print(parameters_dict)
 
     def update(self, item=dict):
+        """Функция обновляет своварь настроек
+
+        Для работы принимает словарь item и обновляет функцикй update()
+        словарь настроек.
+
+        Если item не будет типа dict, выкинет BotException с строкой
+        'Item not dict!'
+
+        """
         if isinstance(item, dict) and item!={}:
             self.parameters_dict.update(item)
             self.set(settings = self.parameters_dict)
