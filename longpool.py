@@ -5,8 +5,11 @@ from vk_api.longpoll import VkLongPoll, VkEventType
 
 import settings
 
-def write_msg(user_id, s, vk_session):
-    vk_session.method('messages.send', {'user_id':user_id,'message':s})
+def write_msg(user_id, s, vk_session, forward_messages=""):
+    if forward_messages == "":
+        vk_session.method('messages.send', {'user_id':user_id,'message':s})
+    else:
+        vk_session.method('messages.send', {'user_id':user_id,'message':s,'forward_messages':forward_messages})
 
 def main():
     try:
@@ -76,8 +79,8 @@ def main():
                         str(user_name[0]["first_name"]) + " " + 
                         str(user_name[0]["last_name"]) +'] написал: ' + 
                         str(event.text) + '\nОтветить: https://vk.com/gim90818758?sel=' + 
-                        str(event.user_id) + "\nОтветить через чат: id" + str(event.user_id), vk_session)
-                    write_msg(int(event.user_id), u'Ваше сообщение переслано администратору сообщества! ;-)\nОн ответит Вам в ближайшее время.\nВ группе тестируеться бот, просим прощение за неудобства.', vk_session)
+                        str(event.user_id) + "\nОтветить через чат: id" + str(event.user_id), vk_session, event.raw[1])
+                    #write_msg(int(event.user_id), u'Ваше сообщение переслано администратору сообщества! ;-)\nОн ответит Вам в ближайшее время.\nВ группе тестируеться бот, просим прощение за неудобства.', vk_session)
 
             elif event.type == VkEventType.USER_TYPING:
                 print('Печатает ', end='')

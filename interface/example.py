@@ -5,7 +5,7 @@ class Interface:
     vk = None
     dynamic_settings = dict()
 
-    def __init__(self, vk, dynamic_settings):
+    def __init__(self, vk, vk_service, dynamic_settings):
         self.vk = vk
         self.dynamic_settings = dynamic_settings
 

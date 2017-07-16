@@ -4,6 +4,8 @@ import os
 import time
 import ast
 
+from BotException import BotException
+
 class DynamicSettings:
     """Класс для управления динамическими настройками бота.
 
@@ -13,7 +15,7 @@ class DynamicSettings:
     Инициация класса без параметров присваевает переменной
     dynamic_settings_filename стандартное значение имени файла для
     сохранения динамических настроек, а именно: dynamic_settings.ini
-
+    
     """
     dynamic_settings_filename = ""
     file = ""

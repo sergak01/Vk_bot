@@ -43,6 +43,13 @@ def main():
         print(error_msg)
         return
 
+    vk_service = vk_api.VkApi(token = settings.service_key)
+    try:
+        vk_service.auth()
+    except vk_api.AuthError as error_msg:
+        print(error_msg)
+        return
+
     print('Подгружаем интерфейсы...')
 
     print('---------------------------')
@@ -53,7 +60,7 @@ def main():
         fname, ext = os.path.splitext(f)
         if ext == '.py':
             mod = __import__(fname)
-            interfaces[fname] = mod.Interface(vk, dynamic_settings)
+            interfaces[fname] = mod.Interface(vk, vk_service, dynamic_settings)
     sys.path.pop(0)
 
     # Регистрируем ключевые слова интерфейсов
@@ -61,10 +68,14 @@ def main():
         for key, value in interface.get_keys().items():
             commands[key] = value
 
+    #print(commands)
+
     # Регистрируем регулярные слова интерфейсов
     for interface in interfaces.values():
         for key, value in interface.get_rexp().items():
             rexp_commands[key] = value
+
+    #print(rexp_commands)
 
     print('---------------------------')
     print('Интерфейсы загружены')
@@ -80,10 +91,13 @@ def main():
             print('Новое сообщение:')
             if event.to_me:
                 print('Для меня от: ', end='')
-            if event.from_user:
-                print(event.user_id)
-                command(event, commands, rexp_commands)
-
+                print(str(event.user_id))
+                if not_sticker(vk, event):
+                    command(event, commands, rexp_commands, vk)
+            elif event.from_me:
+                print('От меня для: ', end='')
+                print(str(event.user_id))
+                
             try:
                 print('Текст: ', event.text)
             except UnicodeEncodeError as e:
@@ -109,17 +123,35 @@ def main():
     # d_sttings = dynamic_settings()
     # print(str(dyn_sett_dict))
 
-def command(event, commands, rexp_commands):
+def not_sticker(vk, event):
+    rep_rexp_type = r'attach(\d)_type'
+    pars = re.compile(rep_rexp_type)
+    for key, value in event.attachments.items():
+        if pars.sub("", key) == "" and value == "sticker":
+            print(vk.method('messages.send', {'user_id':event.user_id,'message':'Извините, бот не поддерживает стикеры.','forward_messages':event.raw[1]}))
+            return False
+    return True
+
+def command(event, commands, rexp_commands, vk):
     if event.text == u'':
         return
     words = event.text.split()
-    if words[0].lower() in commands:
-        commands[words[0].lower()].call(event)
-    else:
-        for key, value in rexp_commands.items():
-            parser = re.compile(value[1])
-            if parser.sub("", event.text) == "":
-                rexp_commands[key][0].call(event)
+    for word in words:
+        if word.lower() in commands:
+            print("Найдена команда: " + str(word.lower()))
+            commands[word.lower()].call(event)
+            print("Команда сработала")
+            return
+        else:
+            for key, value in rexp_commands.items():
+                parser = re.compile(value[1])
+                if parser.sub("", word) == "":
+                    print("Найдена команда: " + str(rexp_commands[key][1]))
+                    rexp_commands[key][0].call(event)
+                    print("Команда сработала")
+                    return
+    vk.method('messages.send', {'user_id':int(event.user_id),'message':"Я не знаю такой команды! Напиши привет, что-бы узнать что я умею :-)"})
+
 
 def print_settings(obj_settings):
     print(str(getattr(obj_settings, "users_token")))
