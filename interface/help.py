@@ -20,4 +20,4 @@ class Interface:
         return {}
 
     def call(self, msg):
-        pass
+        self.vk.method('messages.send', {'user_id':int(event.user_id),'message':"Если вы хотите найти фильм и отправляете просто его название, ничего не выйдет. Нужно до названия фильма добавлять слово \"Найди\" или символ \"#\" перед первым словом."})
