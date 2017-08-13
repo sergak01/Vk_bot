@@ -19,5 +19,5 @@ class Interface:
     def get_rexp(self):
         return {}
 
-    def call(self, msg):
+    def call(self, event):
         self.vk.method('messages.send', {'user_id':int(event.user_id),'message':"Если вы хотите найти фильм и отправляете просто его название, ничего не выйдет. Нужно до названия фильма добавлять слово \"Найди\" или символ \"#\" перед первым словом."})
