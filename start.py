@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-
 import os
 import sys
 import re
 import time
 import ast
 
+from difflib import SequenceMatcher
 import vk_api
 from vk_api.longpoll import VkLongPoll, VkEventType
 from DynamicSettings import DynamicSettings
@@ -13,7 +13,30 @@ from BotException import BotException
 
 import settings
 
-def main(longpoll=None):
+db_driver = settings.db_driver
+
+print("Импортируем драйвер базы данных.")
+if db_driver == "sqlite3":
+    #if SQLite
+    import sqlite3
+    print("Импортирован драйвер SQLite")
+elif db_driver == "psycopg2":
+    #if PostgreSQL
+    import psycopg2
+    print("Импортирован драйвер PostgreSQL")
+elif db_driver == "mysql.connector":
+    #if MySQL
+    import mysql.connector
+    print("Импортирован драйвер MySQL")
+elif db_driver == "pyodbc":
+    #if ODBC
+    import pyodbc
+    print("Импортирован драйвер ODBC")
+else:
+    print("Драйвер базы данных не поддерживаеться!")
+    quit()
+
+def main(developing=False, longpoll=None):
     """Описание главного файла программы
 
     Этот файл планируеться как основной стартовый модуль бота, который
@@ -25,6 +48,41 @@ def main(longpoll=None):
     наличие у пользователя прав администратора.
 
     """
+    if developing:
+        print("Я запущен в режиме разработчика. Делай со мной все что хочешь :-)")
+        print("Подключаем базу данных")
+        db_connector = sqlite3.connect(settings.db_name)
+        print("База данных успешно подключена")
+        print("Инициализируем курсор")
+        db_cursor = db_connector.cursor()
+        print("Курсор готов")
+        # Работа с базой данных
+        user_command = 'найдите'
+        db_cursor.execute("SELECT * FROM command WHERE new_command='" + user_command + "';")
+        # print(db_cursor.fetchall())
+        db_result = db_cursor.fetchall()
+        if db_result:
+            print(db_result[0][0])
+        else:
+            db_cursor.execute("SELECT * FROM command")
+            db_result = db_cursor.fetchall()
+            max_ratio = ["item", "user_command", 0]
+            for item in db_result:
+                s = SequenceMatcher(lambda x: x==" ", item[1], user_command)
+                if max_ratio[2] < s.ratio():
+                    max_ratio[0] = (item[0], item[1])
+                    max_ratio[1] = user_command
+                    max_ratio[2] = s.ratio()
+                print("Ratio: " + item[1] + " and " + user_command + ": " + str(s.ratio()))
+            print("Max ratio: " + str(max_ratio[0]) + " and " + max_ratio[1] + ": " + str(max_ratio[2]))
+            if max_ratio[2] >= 0.7 and len(max_ratio[1]) > 3:
+                db_cursor.execute("INSERT INTO command (standart_command, new_command) VALUES ('" + max_ratio[0][0] + "', '" + max_ratio[1] + "');")
+                db_connector.commit()
+                print("Спасибо, я выучил кое-что новое ;-)")
+        # print(db_cursor.fetchall()[0][0])
+        #----------------------
+        print("Отключаем базу данных")
+        db_connector.close()
     try:
         dyn_sett_dict = {} #Словарь динамических настроек
         commands = {} #Словарь команд
@@ -117,7 +175,7 @@ def main(longpoll=None):
     except Exception as e:
         print(e)
         time.sleep(10)
-        main(longpoll)
+        main(developing=developing, longpoll=longpoll)
     # temp_token_list = ast.literal_eval(dyn_sett_dict.get("users_token"))
     # temp_token_list.update({50583928: "{user_token: token, time_out: 10}"})
     # dyn_sett_dict.update({"users_token" : temp_token_list})
@@ -174,4 +232,9 @@ def generate_standart_dynamic_setting():
 
 
 if __name__ == '__main__':
-    main()
+    if len (sys.argv) > 1:
+        for param in sys.argv:
+            if param == "-dev" or param == "-developing":
+                main(developing=True)
+    else:
+        main()
