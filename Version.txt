@@ -1,4 +1,4 @@
-[Ver.-Alpha (1.00.00)] -Autoupdate -Alpha -Beta -Stable
+[Ver.-Alpha(1.00.00)] -Autoupdate -Alpha -Beta -Stable
 Changlog
 
 1. Test
