@@ -41,6 +41,7 @@ def main(update=False):
     else:
         print("Бот не нуждаеться в обновлении.")
         quit()
+    quit()
 
 def get_version():
     global update_parameters
@@ -48,6 +49,8 @@ def get_version():
         with open("Version.txt", "r") as version_file:
             print("Файл версий открыт")
             first_line = version_file.readline()
+            if first_line[0] == "":
+                raise FileNotFoundError
             update_parameters = first_line.split()
     except FileNotFoundError:
         print("Файл версий не найден! Будет скачана последння Alpha версия")
