@@ -1,4 +1,13 @@
 # -*- coding: utf-8 -*-
+"""Модуль автоматического обновления бота
+Модуль предназначен для автоматического получения новых версий бота, а
+также для его скачки (если отсутствует файл Version.txt).
+
+Модуль сейчас обновляет только -Alpha версии программ (-Beta версии
+еще не было в релизе, а -Stable версия еще не имеет в комплекте
+модуля автообновлений и файла версий).
+
+"""
 import requests
 import subprocess
 import os
@@ -22,7 +31,8 @@ def main(update=False):
             version[2] < last_version[2] or
             version[3] < last_version[3]
         ):
-        if "-Autoupdate" in update_parameters or update == True or version[1] == 0:
+        if "-Autoupdate" in update_parameters or \
+            update == True or version[1] == 0:
             print("Запускаю автообновление!")
             get_update_zip(last_version)
             if zipfile.is_zipfile('update.zip'):
@@ -37,13 +47,20 @@ def main(update=False):
                 print("Обновление закончено. Запускаю бота...")
                 subprocess.Popen("python.exe .\start.py")
         else:
-            print("Доступно обновление бота. Это обновление не будет установлено автоматически. Для установки выполните команду 'python autoupdate.py -update'")
+            print("Доступно обновление бота. Это обновление не будет " + \
+                "установлено автоматически. Для установки выполните " + \
+                "команду 'python autoupdate.py -update'")
     else:
         print("Бот не нуждаеться в обновлении.")
         quit()
     quit()
 
 def get_version():
+    """Функция получения текущей установленой версии бота
+    Проверяет существование файла Version.txt в папке бота и если он
+    существует - получает первую строку файла.
+
+    """
     global update_parameters
     try:
         with open("Version.txt", "r") as version_file:
@@ -57,9 +74,16 @@ def get_version():
         update_parameters = str("[Ver.-Alpha(0.00.00)] -Autoupdate").split()
 
 def get_last_version(version):
+    """Функция определения последней доступной версии бота
+    Функция проверяет файл Version.txt в моем аккаунте на github в
+    ветке которая соответствует текущей ветке бота и получает
+    первую строку файла.
+
+    """
     global update_parameters
     if version[0] == "Alpha":
-        ver_file = requests.get("https://raw.githubusercontent.com/sergak01/Vk_bot/Ver.-Alpha/Version.txt")
+        ver_file = requests.get("https://raw.githubusercontent.com/" + \
+            "sergak01/Vk_bot/Ver.-Alpha/Version.txt")
         first_line = ver_file.content.decode("utf-8").split('\n', 1)[0]
         update_parameters = first_line.split()
         return get_version_from_text(update_parameters[0])
@@ -72,6 +96,11 @@ def get_last_version(version):
         quit()
 
 def get_version_from_text(version_text):
+    """Разбирает версию бота в текстовом формате на переменные
+    Парсит строку версии, выделяет из нее тип (Alpha, Beta или Stable),
+    а также числовые параметры названия.
+
+    """
     temp_version = [str, int, int, int]
     rexp_parser = re.compile(r'\[Ver\.-([^\(]+)\((\d+)\.(\d+)\.(\d+)[^$]+')
     if rexp_parser.sub("", version_text) == "":
@@ -85,12 +114,21 @@ def get_version_from_text(version_text):
         quit()
 
 def get_update_zip(version):
+    """Функция скачивает и сохраняет архив обновления в папке бота
+    Архив обновления являетсься релизом и находиться в моем аккаунте.
+
+    Ссылка на архив получается из статической части и динамической,
+    которая являеться названием версии.
+
+    """
     global text_last_version
-    text_last_version = "Ver.-" + version[0] + "(" + \
-        (str(version[1])) + \
-        "." + ("0" + str(version[2]) if len(str(version[2])) < 2 else str(version[2])) + \
-        "." + ("0" + str(version[3]) if len(str(version[3])) < 2 else str(version[3])) + ")"
-    path_to_web_zip = "https://github.com/sergak01/Vk_bot/archive/" + text_last_version + ".zip"
+    text_last_version = "Ver.-" + version[0] + "(" + (str(version[1])) + \
+        "." + ("0" + str(version[2]) if len(str(version[2])) < 2 
+            else str(version[2])) + \
+        "." + ("0" + str(version[3]) if len(str(version[3])) < 2 
+            else str(version[3])) + ")"
+    path_to_web_zip = "https://github.com/sergak01/Vk_bot/archive/" + \
+        text_last_version + ".zip"
     try:
         with open("update.zip", "wb") as zipfile:
             print("Пытаюсь скачать архив обновления...")
@@ -102,7 +140,10 @@ def get_update_zip(version):
         print(e)
 
 def extract_zip(zipfile):
-    root = os.path.abspath('.')
+    """Функция распаковки zip архива
+    Извлекает все файлы и папки архива в текущую папку.
+
+    """
     name_list = zipfile.namelist()
     new_files_path = {}
     directory_tree = {}
@@ -137,6 +178,10 @@ if __name__ == "__main__":
     if len (sys.argv) > 1:
         for param in sys.argv:
             if param == "-update" or param == "-u":
+                # Если скрипт запущен с параметрами -u или -update,
+                # автоматически обновляет бота до последней версии.
+                # Иначе проверяет существование параметра -Autoupdate
+                # в файле Version.txt на сервере.
                 main(update=True)
     else:
         main()
