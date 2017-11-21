@@ -58,7 +58,10 @@ def main(developing=False, longpoll=None):
         print("Курсор готов")
         # Работа с базой данных
         user_command = 'найдите'
-        db_cursor.execute("SELECT * FROM command WHERE new_command='" + user_command + "';")
+        db_cursor.execute(
+            "SELECT * FROM command WHERE new_command='" + \
+                user_command + "';"
+        )
         # print(db_cursor.fetchall())
         db_result = db_cursor.fetchall()
         if db_result:
@@ -73,10 +76,15 @@ def main(developing=False, longpoll=None):
                     max_ratio[0] = (item[0], item[1])
                     max_ratio[1] = user_command
                     max_ratio[2] = s.ratio()
-                print("Ratio: " + item[1] + " and " + user_command + ": " + str(s.ratio()))
-            print("Max ratio: " + str(max_ratio[0]) + " and " + max_ratio[1] + ": " + str(max_ratio[2]))
+                print("Ratio: " + item[1] + " and " + user_command + \
+                    ": " + str(s.ratio()))
+            print("Max ratio: " + str(max_ratio[0]) + " and " + max_ratio[1] + \
+                ": " + str(max_ratio[2]))
             if max_ratio[2] >= 0.7 and len(max_ratio[1]) > 3:
-                db_cursor.execute("INSERT INTO command (standart_command, new_command) VALUES ('" + max_ratio[0][0] + "', '" + max_ratio[1] + "');")
+                db_cursor.execute("INSERT INTO command (standart_command," + \
+                    " new_command) VALUES ('" + max_ratio[0][0] + "', '" + \
+                    max_ratio[1] + "');"
+                )
                 db_connector.commit()
                 print("Спасибо, я выучил кое-что новое ;-)")
         # print(db_cursor.fetchall()[0][0])
@@ -89,7 +97,9 @@ def main(developing=False, longpoll=None):
         rexp_commands = {} #Словарь регулярных команд
         interfaces = {} #Словарь интерфейсов
         vk = vk_api.VkApi(token = settings.vk_token)
-        dynamic_settings = DynamicSettings(dynamic_settings_filename = settings.dynamic_settings_file)
+        dynamic_settings = DynamicSettings(
+            dynamic_settings_filename = settings.dynamic_settings_file
+            )
         if(dynamic_settings.file_created()):
             dyn_sett_dict = dynamic_settings.get()
         else:
@@ -119,7 +129,10 @@ def main(developing=False, longpoll=None):
             fname, ext = os.path.splitext(f)
             if ext == '.py':
                 mod = __import__(fname)
-                interfaces[fname] = mod.Interface(vk, vk_service, dynamic_settings)
+                interfaces[fname] = mod.Interface(
+                    vk, vk_service,
+                    dynamic_settings
+                )
         sys.path.pop(0)
 
         # Регистрируем ключевые слова интерфейсов
@@ -176,24 +189,17 @@ def main(developing=False, longpoll=None):
         print(e)
         time.sleep(10)
         main(developing=developing, longpoll=longpoll)
-    # temp_token_list = ast.literal_eval(dyn_sett_dict.get("users_token"))
-    # temp_token_list.update({50583928: "{user_token: token, time_out: 10}"})
-    # dyn_sett_dict.update({"users_token" : temp_token_list})
-    # dyn_sett_file.set_dynamic_settings(dyn_sett_dict)
-    # while True:
-    #     setting = settings()
-    #     print_settings(setting)
-    #     time.sleep(10)
-    #     setattr(setting, "public_token", "token1")
-    # d_sttings = dynamic_settings()
-    # print(str(dyn_sett_dict))
 
 def not_sticker(vk, event):
     rep_rexp_type = r'attach(\d)_type'
     pars = re.compile(rep_rexp_type)
     for key, value in event.attachments.items():
         if pars.sub("", key) == "" and value == "sticker":
-            print(vk.method('messages.send', {'user_id':event.user_id,'message':'Извините, бот не поддерживает стикеры.','forward_messages':event.raw[1]}))
+            print(vk.method('messages.send', {
+                'user_id':event.user_id,
+                'message':'Извините, бот не поддерживает стикеры.',
+                'forward_messages':event.raw[1]
+            }))
             return False
     return True
 
@@ -215,7 +221,11 @@ def command(event, commands, rexp_commands, vk):
                     rexp_commands[key][0].call(event)
                     print("Команда сработала")
                     return
-    vk.method('messages.send', {'user_id':int(event.user_id),'message':"Я не знаю такой команды! Напиши привет, что-бы узнать что я умею :-)"})
+    vk.method('messages.send', {
+        'user_id':int(event.user_id),
+        'message':"Я не знаю такой команды! Напиши привет, что-бы узнать" + \
+            " что я умею :-)"
+        })
 
 
 def print_settings(obj_settings):
